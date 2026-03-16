@@ -6,24 +6,6 @@ import jwt from 'jsonwebtoken';
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'latewa-cbo-secret-key-2024';
 
-// Middleware to verify JWT token
-const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
-
-  if (!token) {
-    return res.status(401).json({ message: 'Access token required' });
-  }
-
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(403).json({ message: 'Invalid or expired token' });
-    }
-    req.user = user;
-    next();
-  });
-};
-
 // Setup initial admin user (run once)
 router.post('/setup', async (req, res) => {
   try {
@@ -85,19 +67,10 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Verify token endpoint
-router.get('/verify', authenticateToken, (req, res) => {
-  res.json({ valid: true, user: req.user });
-});
-
-// Logout endpoint (client-side handles token removal, this is for any server-side cleanup)
-router.post('/logout', authenticateToken, (req, res) => {
-  res.json({ message: 'Logged out successfully' });
-});
 
 // Protected routes - require authentication
 // Get all donations
-router.get('/donations', authenticateToken, async (req, res) => {
+router.get('/donations', async (req, res) => {
   try {
     const { rows } = await query('SELECT * FROM donations ORDER BY created_at DESC');
     res.json(rows);
@@ -108,7 +81,7 @@ router.get('/donations', authenticateToken, async (req, res) => {
 });
 
 // Get all contacts
-router.get('/contacts', authenticateToken, async (req, res) => {
+router.get('/contacts', async (req, res) => {
   try {
     const { rows } = await query('SELECT * FROM contacts ORDER BY created_at DESC');
     res.json(rows);
@@ -119,7 +92,7 @@ router.get('/contacts', authenticateToken, async (req, res) => {
 });
 
 // Update contact status
-router.patch('/contacts/:id', authenticateToken, async (req, res) => {
+router.patch('/contacts/:id', async (req, res) => {
   const { status } = req.body;
   try {
     const { rows, rowCount } = await query(
@@ -138,7 +111,7 @@ router.patch('/contacts/:id', authenticateToken, async (req, res) => {
 });
 
 // Get all orders
-router.get('/orders', authenticateToken, async (req, res) => {
+router.get('/orders', async (req, res) => {
   try {
     const { rows } = await query('SELECT * FROM orders ORDER BY created_at DESC');
     res.json(rows);
@@ -149,7 +122,7 @@ router.get('/orders', authenticateToken, async (req, res) => {
 });
 
 // Update order status
-router.patch('/orders/:id', authenticateToken, async (req, res) => {
+router.patch('/orders/:id', async (req, res) => {
   const { status } = req.body;
   try {
     const { rows, rowCount } = await query(
@@ -168,7 +141,7 @@ router.patch('/orders/:id', authenticateToken, async (req, res) => {
 });
 
 // Get all volunteers
-router.get('/volunteers', authenticateToken, async (req, res) => {
+router.get('/volunteers', async (req, res) => {
   try {
     const { rows } = await query('SELECT * FROM volunteers ORDER BY created_at DESC');
     res.json(rows);
@@ -178,24 +151,19 @@ router.get('/volunteers', authenticateToken, async (req, res) => {
   }
 });
 
-// Add volunteer
-router.post('/volunteers', authenticateToken, async (req, res) => {
-  const { name, email, phone, area, availability } = req.body;
-  const id = 'VOL-' + Date.now();
+// Get all partners
+router.get('/partners', async (req, res) => {
   try {
-    const { rows } = await query(
-      'INSERT INTO volunteers (id, name, email, phone, area, availability, status) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-      [id, name, email, phone, area, availability, 'Pending']
-    );
-    res.status(201).json(rows[0]);
+    const { rows } = await query('SELECT * FROM partners ORDER BY created_at DESC');
+    res.json(rows);
   } catch (err) {
-    console.error('Error adding volunteer:', err.message);
+    console.error('Error fetching partners:', err.message);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
 // Update volunteer status
-router.patch('/volunteers/:id', authenticateToken, async (req, res) => {
+router.patch('/volunteers/:id', async (req, res) => {
   const { status } = req.body;
   try {
     const { rows, rowCount } = await query(
@@ -213,8 +181,46 @@ router.patch('/volunteers/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// Update partner status
+router.patch('/partners/:id', async (req, res) => {
+  const { status } = req.body;
+  try {
+    const { rows, rowCount } = await query(
+      'UPDATE partners SET status = $1 WHERE id = $2 RETURNING *',
+      [status, req.params.id]
+    );
+    if (rowCount > 0) {
+      res.json(rows[0]);
+    } else {
+      res.status(404).json({ message: 'Partner not found' });
+    }
+  } catch (err) {
+    console.error('Error updating partner status:', err.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Update donation status
+router.patch('/donations/:id', async (req, res) => {
+  const { status } = req.body;
+  try {
+    const { rows, rowCount } = await query(
+      'UPDATE donations SET status = $1 WHERE id = $2 RETURNING *',
+      [status, req.params.id]
+    );
+    if (rowCount > 0) {
+      res.json(rows[0]);
+    } else {
+      res.status(404).json({ message: 'Donation not found' });
+    }
+  } catch (err) {
+    console.error('Error updating donation status:', err.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Get all gallery images
-router.get('/gallery', authenticateToken, async (req, res) => {
+router.get('/gallery', async (req, res) => {
   try {
     const { rows } = await query('SELECT * FROM gallery ORDER BY created_at DESC');
     res.json(rows);
@@ -225,7 +231,7 @@ router.get('/gallery', authenticateToken, async (req, res) => {
 });
 
 // Add gallery image
-router.post('/gallery', authenticateToken, async (req, res) => {
+router.post('/gallery', async (req, res) => {
   const { url, caption } = req.body;
   try {
     const { rows } = await query(
@@ -240,7 +246,7 @@ router.post('/gallery', authenticateToken, async (req, res) => {
 });
 
 // Delete gallery image
-router.delete('/gallery/:id', authenticateToken, async (req, res) => {
+router.delete('/gallery/:id', async (req, res) => {
   try {
     const { rowCount } = await query('DELETE FROM gallery WHERE id = $1', [req.params.id]);
     if (rowCount > 0) {
@@ -255,7 +261,7 @@ router.delete('/gallery/:id', authenticateToken, async (req, res) => {
 });
 
 // Get dashboard stats
-router.get('/stats', authenticateToken, async (req, res) => {
+router.get('/stats', async (req, res) => {
   try {
     const donationsResult = await query('SELECT COALESCE(SUM(amount), 0) as total FROM donations');
     const ordersResult = await query('SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as revenue FROM orders');

@@ -122,7 +122,7 @@ function DashboardOverview() {
   return (
     <div>
       <h2 className="text-2xl font-bold text-gray-900 mb-6">Dashboard Overview</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <StatsCard
           title="Total Revenue"
           value={`KES ${stats.totalRevenue.toLocaleString()}`}
@@ -160,6 +160,169 @@ function DashboardOverview() {
           color="bg-yellow-500"
         />
       </div>
+
+      {/* Recent Donations Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-bold text-gray-900">Recent Donations</h3>
+            <button
+              onClick={() => setActiveTab('donations')}
+              className="text-red-600 hover:text-red-800 font-medium text-sm"
+            >
+              View All →
+            </button>
+          </div>
+          <RecentDonationsList />
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-bold text-gray-900">Recent Contacts</h3>
+            <button
+              onClick={() => setActiveTab('contacts')}
+              className="text-red-600 hover:text-red-800 font-medium text-sm"
+            >
+              View All →
+            </button>
+          </div>
+          <RecentContactsList />
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+        <h3 className="text-lg font-bold text-gray-900 mb-4">Quick Actions</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <button
+            onClick={() => setActiveTab('products')}
+            className="bg-red-50 border border-red-200 rounded-xl p-4 hover:bg-red-100 transition-colors"
+          >
+            <div className="h-8 w-8 bg-red-600 rounded-lg flex items-center justify-center mb-2 mx-auto">
+              <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+            </div>
+            <p className="text-sm font-semibold text-gray-900">Manage Products</p>
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('orders')}
+            className="bg-blue-50 border border-blue-200 rounded-xl p-4 hover:bg-blue-100 transition-colors"
+          >
+            <div className="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center mb-2 mx-auto">
+              <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            </div>
+            <p className="text-sm font-semibold text-gray-900">Manage Orders</p>
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('volunteers')}
+            className="bg-purple-50 border border-purple-200 rounded-xl p-4 hover:bg-purple-100 transition-colors"
+          >
+            <div className="h-8 w-8 bg-purple-600 rounded-lg flex items-center justify-center mb-2 mx-auto">
+              <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            <p className="text-sm font-semibold text-gray-900">Manage Volunteers</p>
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('gallery')}
+            className="bg-green-50 border border-green-200 rounded-xl p-4 hover:bg-green-100 transition-colors"
+          >
+            <div className="h-8 w-8 bg-green-600 rounded-lg flex items-center justify-center mb-2 mx-auto">
+              <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <p className="text-sm font-semibold text-gray-900">Manage Gallery</p>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Recent Donations List Component
+function RecentDonationsList() {
+  const [donations, setDonations] = useState([]);
+
+  useEffect(() => {
+    authFetch(`${API_URL}/admin/donations`)
+      .then((res) => res.json())
+      .then((data) => {
+        // Sort by date and take last 5
+        const sorted = data.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+        setDonations(sorted);
+      })
+      .catch(console.error);
+  }, []);
+
+  return (
+    <div className="space-y-3">
+      {donations.length === 0 ? (
+        <p className="text-gray-500 text-sm">No recent donations</p>
+      ) : (
+        donations.map((donation) => (
+          <div key={donation.id} className="flex justify-between items-center py-2 border-b border-gray-50">
+            <div>
+              <p className="font-medium text-gray-900">{donation.name}</p>
+              <p className="text-sm text-gray-500">{donation.type}</p>
+            </div>
+            <div className="text-right">
+              <p className="font-semibold text-green-600">KES {donation.amount.toLocaleString()}</p>
+              <p className="text-xs text-gray-400">{donation.date}</p>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
+// Recent Contacts List Component
+function RecentContactsList() {
+  const [contacts, setContacts] = useState([]);
+
+  useEffect(() => {
+    authFetch(`${API_URL}/admin/contacts`)
+      .then((res) => res.json())
+      .then((data) => {
+        // Sort by date and take last 5
+        const sorted = data.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+        setContacts(sorted);
+      })
+      .catch(console.error);
+  }, []);
+
+  return (
+    <div className="space-y-3">
+      {contacts.length === 0 ? (
+        <p className="text-gray-500 text-sm">No recent contacts</p>
+      ) : (
+        contacts.map((contact) => (
+          <div key={contact.id} className="flex justify-between items-center py-2 border-b border-gray-50">
+            <div>
+              <p className="font-medium text-gray-900">{contact.name}</p>
+              <p className="text-sm text-gray-500">{contact.interest}</p>
+            </div>
+            <div className="text-right">
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                contact.status === 'New' ? 'bg-red-100 text-red-800' : 
+                contact.status === 'Read' ? 'bg-blue-100 text-blue-800' : 
+                'bg-green-100 text-green-800'
+              }`}>
+                {contact.status}
+              </span>
+              <p className="text-xs text-gray-400">{contact.date}</p>
+            </div>
+          </div>
+        ))
+      )}
     </div>
   );
 }
@@ -882,134 +1045,12 @@ function GalleryManagement() {
 // Main Admin Dashboard Component
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [loginError, setLoginError] = useState('');
-
-  // Check if already authenticated on mount
-  useEffect(() => {
-    const verifyAuth = async () => {
-      const token = localStorage.getItem('adminToken');
-      if (token) {
-        try {
-          const res = await authFetch(`${API_URL}/admin/verify`);
-          if (res.ok) {
-            const data = await res.json();
-            setIsAuthenticated(true);
-            setUsername(data.user.username);
-          } else {
-            localStorage.removeItem('adminToken');
-          }
-        } catch {
-          localStorage.removeItem('adminToken');
-        }
-      }
-      setIsLoading(false);
-    };
-    verifyAuth();
-  }, []);
-
-  // Handle login with API
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoginError('');
-    
-    try {
-      const res = await fetch(`${API_URL}/admin/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        localStorage.setItem('adminToken', data.token);
-        setIsAuthenticated(true);
-        setPassword('');
-        setLoginError('');
-      } else {
-        setLoginError(data.message || 'Invalid credentials');
-      }
-    } catch {
-      setLoginError('Connection error. Please try again.');
-    }
-  };
 
   // Handle logout
   const handleLogout = useCallback(() => {
     localStorage.removeItem('adminToken');
-    setIsAuthenticated(false);
-    setUsername('');
-    setPassword('');
     window.location.href = '/';
   }, []);
-
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-2xl p-8 shadow-lg max-w-md w-full"
-        >
-          <div className="text-center mb-6">
-            <div className="h-16 w-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <svg className="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900">Admin Authentication</h1>
-            <p className="text-gray-500 mt-1">Enter credentials to access dashboard</p>
-          </div>
-          <form onSubmit={handleLogin}>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                placeholder="Enter username"
-                required
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                placeholder="Enter password"
-                required
-              />
-            </div>
-            {loginError && (
-              <p className="text-red-600 text-sm mb-4 text-center">{loginError}</p>
-            )}
-            <button
-              type="submit"
-              className="w-full bg-red-600 text-white py-3 rounded-xl font-semibold hover:bg-red-700 transition-colors"
-            >
-              Access Dashboard
-            </button>
-          </form>
-        </motion.div>
-      </div>
-    );
-  }
 
   const renderContent = () => {
     switch (activeTab) {

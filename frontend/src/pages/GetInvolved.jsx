@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
+import { API_URL } from '../config';
 
 function GetInvolved() {
   // Form state for Donation
@@ -34,25 +36,70 @@ function GetInvolved() {
   });
 
   // Handle form submissions
-  const handleDonationSubmit = (e) => {
+  const handleDonationSubmit = async (e) => {
     e.preventDefault();
-    console.log('Donation Form:', donationForm);
-    // Add your form submission logic here
-    alert('Thank you for your donation interest! We will contact you soon.');
+    try {
+      const response = await fetch(`${API_URL}/donations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...donationForm,
+          donor_type: donationForm.status // map status to donor_type for backend
+        })
+      });
+
+      if (response.ok) {
+        toast.success('Thank you for your donation interest! We will contact you soon.');
+        setDonationForm({ name: '', email: '', amount: '', type: 'one-time', status: 'individual' });
+      } else {
+        toast.error('Failed to submit donation interest. Please try again.');
+      }
+    } catch (error) {
+      console.error('Donation error:', error);
+      toast.error('An error occurred. Please check your connection.');
+    }
   };
 
-  const handleVolunteerSubmit = (e) => {
+  const handleVolunteerSubmit = async (e) => {
     e.preventDefault();
-    console.log('Volunteer Form:', volunteerForm);
-    // Add your form submission logic here
-    alert('Thank you for volunteering! We will reach out to you shortly.');
+    try {
+      const response = await fetch(`${API_URL}/volunteers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(volunteerForm)
+      });
+
+      if (response.ok) {
+        toast.success('Thank you for volunteering! We will reach out to you shortly.');
+        setVolunteerForm({ name: '', email: '', phone: '', interest: '', skills: '', availability: '' });
+      } else {
+        toast.error('Failed to submit application. Please try again.');
+      }
+    } catch (error) {
+      console.error('Volunteer error:', error);
+      toast.error('An error occurred. Please check your connection.');
+    }
   };
 
-  const handlePartnerSubmit = (e) => {
+  const handlePartnerSubmit = async (e) => {
     e.preventDefault();
-    console.log('Partner Form:', partnerForm);
-    // Add your form submission logic here
-    alert('Thank you for your partnership interest! We will contact you soon.');
+    try {
+      const response = await fetch(`${API_URL}/partners`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(partnerForm)
+      });
+
+      if (response.ok) {
+        toast.success('Thank you for your partnership interest! We will contact you soon.');
+        setPartnerForm({ organization: '', contactName: '', email: '', phone: '', organizationType: 'ngo', partnershipInterest: '', message: '' });
+      } else {
+        toast.error('Failed to submit partnership interest. Please try again.');
+      }
+    } catch (error) {
+      console.error('Partner error:', error);
+      toast.error('An error occurred. Please check your connection.');
+    }
   };
 
   // Animation variants

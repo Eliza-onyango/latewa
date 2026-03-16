@@ -3,13 +3,13 @@ import { query } from '../db.js';
 const router = express.Router();
 
 router.post('/', async (req, res) => {
-  const { name, email, amount, type } = req.body;
+  const { name, email, amount, type, donor_type } = req.body;
   const donationId = 'DON-' + Math.floor(Math.random() * 1000000);
   
   try {
     await query(
-      'INSERT INTO donations (id, name, email, amount, type, status) VALUES ($1, $2, $3, $4, $5, $6)',
-      [donationId, name, email, amount, type, 'Completed']
+      'INSERT INTO donations (id, name, email, amount, type, status, donor_type) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+      [donationId, name, email, amount, type, 'Completed', donor_type || 'individual']
     );
     
     console.log(`New donation from ${name} (${email}): KES ${amount} for ${type}`);
