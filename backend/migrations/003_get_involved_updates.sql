@@ -1,6 +1,6 @@
 -- Update volunteers table
 ALTER TABLE volunteers ADD COLUMN IF NOT EXISTS skills TEXT;
-ALTER TABLE volunteers RENAME COLUMN area TO interest;
+ALTER TABLE volunteers ADD COLUMN IF NOT EXISTS interest TEXT;
 
 -- Create partners table
 CREATE TABLE IF NOT EXISTS partners (

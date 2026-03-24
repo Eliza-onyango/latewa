@@ -1,6 +1,7 @@
 import express from 'express';
 const router = express.Router();
 import { query } from '../db.js';
+import { sendOrderEmail } from '../utils/email.js';
 
 // Create a new order
 router.post('/', async (req, res) => {
@@ -14,6 +15,9 @@ router.post('/', async (req, res) => {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
       [orderId, name, email, phone, address, JSON.stringify(items), total, provider, paymentRef || null, 'Paid']
     );
+    
+    // Send order received email
+    await sendOrderEmail(rows[0], 'received');
     
     console.log(`New order placed by ${name} (${email}): Order ${orderId}, Total KES ${total} via ${provider}`);
     
@@ -75,7 +79,16 @@ router.patch('/:id', async (req, res) => {
     );
     
     if (rowCount > 0) {
-      res.json(rows[0]);
+      const order = rows[0];
+      
+      // Send email notifications based on status
+      if (status === 'Delivering') {
+        await sendOrderEmail(order, 'delivery');
+      } else if (status === 'Completed') {
+        await sendOrderEmail(order, 'completed');
+      }
+      
+      res.json(order);
     } else {
       res.status(404).json({ message: 'Order not found' });
     }

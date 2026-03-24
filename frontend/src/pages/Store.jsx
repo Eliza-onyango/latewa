@@ -32,84 +32,87 @@ export default function Store() {
   const [sortBy, setSortBy] = useState('featured');
   const [searchQuery, setSearchQuery] = useState('');
   const [priceRange, setPriceRange] = useState({ min: 0, max: 100000 });
+  
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const pageSize = 12;
 
   // Categories
   const categories = [
     { id: 'all', name: 'All Products', icon: '🛍️' },
-    { id: 'paintings', name: 'Paintings', icon: '🎨' },
-    { id: 'sculptures', name: 'Sculptures', icon: '🗿' },
-    { id: 'textiles', name: 'Textiles', icon: '🧵' },
-    { id: 'jewelry', name: 'Jewelry', icon: '💍' },
-    { id: 'pottery', name: 'Pottery', icon: '🏺' },
+    { id: 'Jewelry', name: 'Jewelry', icon: '💍' },
+    { id: 'Sculpture', name: 'Sculpture', icon: '🗿' },
+    { id: 'Wall Art', name: 'Wall Art', icon: '🎨' },
+    { id: 'Fashion', name: 'Fashion', icon: '👔' },
+    { id: 'Accessories', name: 'Accessories', icon: '✨' },
+    { id: 'Home Decor', name: 'Home Decor', icon: '🏠' },
   ];
 
   useEffect(() => {
-    fetch(`${API_URL}/products`)
+    setLoading(true);
+    setError(null);
+    
+    // Build query parameters
+    const params = new URLSearchParams({
+      page: currentPage,
+      limit: pageSize,
+      category: selectedCategory,
+      search: searchQuery,
+      minPrice: priceRange.min,
+      maxPrice: priceRange.max
+    });
+
+    fetch(`${API_URL}/products?${params.toString()}`)
       .then(res => {
         if (!res.ok) throw new Error('Failed to fetch products');
         return res.json();
       })
       .then(data => {
-        setProducts(data);
+        setProducts(data.products || []);
+        setTotalPages(data.totalPages || 1);
+        setTotalItems(data.total || 0);
         setLoading(false);
+        setCurrentPage(1); // Reset to first page when filters change
+        // Scroll to top of results when filters change
+        window.scrollTo({ top: 300, behavior: 'smooth' });
       })
       .catch(err => {
         console.error(err);
         setError(err.message);
         setLoading(false);
       });
-  }, []);
+  }, [currentPage, selectedCategory, searchQuery, priceRange]);
 
-  // Filter and sort products
-  const filteredProducts = useMemo(() => {
-    let filtered = [...products];
+  // Sort products client-side (backend returns pre-filtered)
+  const sortedProducts = useMemo(() => {
+    let sorted = [...products];
 
-    // Filter by category
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(p => p.category === selectedCategory);
-    }
-
-    // Filter by search query
-    if (searchQuery) {
-      filtered = filtered.filter(p => 
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.description?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    // Filter by price range
-    filtered = filtered.filter(p => 
-      p.price >= priceRange.min && p.price <= priceRange.max
-    );
-
-    // Sort
+    // Sort based on selection
     switch (sortBy) {
       case 'price-low':
-        filtered.sort((a, b) => a.price - b.price);
+        sorted.sort((a, b) => a.price - b.price);
         break;
       case 'price-high':
-        filtered.sort((a, b) => b.price - a.price);
+        sorted.sort((a, b) => b.price - a.price);
         break;
       case 'newest':
-        filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        sorted.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         break;
       case 'popular':
-        filtered.sort((a, b) => (b.sales || 0) - (a.sales || 0));
+        sorted.sort((a, b) => (b.sales || 0) - (a.sales || 0));
         break;
       default:
         // featured - keep original order
         break;
     }
 
-    return filtered;
-  }, [products, selectedCategory, searchQuery, sortBy, priceRange]);
+    return sorted;
+  }, [products, sortBy]);
 
   return (
-    <motion.div
-      initial="hidden"
-      animate="visible"
-      className="bg-gray-50 min-h-screen"
-    >
+    <div className="bg-gray-50 min-h-screen">
       {/* Hero Section */}
       <motion.section 
         variants={fadeInUp}
@@ -230,7 +233,7 @@ export default function Store() {
             className="flex justify-between items-center mb-6"
           >
             <p className="text-gray-600">
-              Showing <span className="font-bold text-red-600">{filteredProducts.length}</span> products
+              Showing <span className="font-bold text-red-600">{sortedProducts.length}</span> of <span className="font-bold text-red-600">{totalItems}</span> products
             </p>
             <p className="text-sm text-gray-500">
               Every purchase supports our community
@@ -239,8 +242,24 @@ export default function Store() {
 
           {/* Products Grid */}
           {loading ? (
-            <div className="flex justify-center py-20">
-              <div className="animate-spin rounded-full h-16 w-16 border-4 border-red-600 border-t-transparent"></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="bg-white rounded-xl shadow-md overflow-hidden animate-pulse">
+                  <div className="aspect-square bg-gray-200"></div>
+                  <div className="p-6 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <div className="h-6 bg-gray-200 rounded w-1/2"></div>
+                      <div className="h-6 bg-gray-200 rounded w-1/4"></div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-4 bg-gray-200 rounded w-full"></div>
+                      <div className="h-4 bg-gray-200 rounded w-full"></div>
+                      <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                    </div>
+                    <div className="h-10 bg-gray-200 rounded w-full"></div>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : error ? (
             <div className="text-center py-20">
@@ -258,7 +277,7 @@ export default function Store() {
                 </button>
               </div>
             </div>
-          ) : filteredProducts.length === 0 ? (
+          ) : sortedProducts.length === 0 ? (
             <motion.div 
               variants={fadeInUp}
               className="text-center py-20 bg-white rounded-2xl shadow-lg"
@@ -279,20 +298,79 @@ export default function Store() {
               </button>
             </motion.div>
           ) : (
-            <motion.div 
-              variants={staggerContainer}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-            >
-              {filteredProducts.map((product, index) => (
-                <motion.div
-                  key={product.id}
+            <>
+              <motion.div 
+                initial="hidden"
+                animate="visible"
+                variants={staggerContainer}
+                className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"
+              >
+                {sortedProducts.map((product) => (
+                  <motion.div
+                    key={product.id}
+                    variants={fadeInUp}
+                  >
+                    <ProductCard product={product} onAdd={addItem} />
+                  </motion.div>
+                ))}
+              </motion.div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <motion.div 
                   variants={fadeInUp}
-                  whileHover={{ y: -5 }}
+                  className="flex justify-center items-center gap-4 mt-8"
                 >
-                  <ProductCard product={product} onAdd={addItem} />
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Previous
+                  </button>
+                  
+                  <div className="flex gap-2">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(page => 
+                        page === 1 || 
+                        page === totalPages || 
+                        (page >= currentPage - 1 && page <= currentPage + 1)
+                      )
+                      .map((page, index, arr) => {
+                        // Add ellipsis if there's a gap
+                        if (index > 0 && page - arr[index - 1] > 1) {
+                          return (
+                            <span key={`ellipsis-${page}`} className="px-2 py-2 text-gray-500">
+                              ...
+                            </span>
+                          );
+                        }
+                        return (
+                          <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                              currentPage === page
+                                ? 'bg-red-600 text-white'
+                                : 'bg-white border border-gray-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        );
+                      })}
+                  </div>
+
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Next
+                  </button>
                 </motion.div>
-              ))}
-            </motion.div>
+              )}
+            </>
           )}
 
           {/* Impact Stats */}
@@ -358,6 +436,6 @@ export default function Store() {
           </motion.div>
         </div>
       </section>
-    </motion.div>
+    </div>
   );
 }

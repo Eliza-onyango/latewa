@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
+import { ShoppingCart, Truck, Store } from 'lucide-react';
 import logo from '../assets/latewa-logo1.png';
 import { useCart } from '../context/CartContext';
 
@@ -14,12 +15,10 @@ function CartButton() {
       className="relative p-3 rounded-xl hover:bg-gray-50 transition-all focus-ring"
       aria-label="View cart"
     >
-      <svg className="w-6 h-6 text-modern-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2 9m5-9v9m6-9v9" />
-      </svg>
+      <ShoppingCart className="w-6 h-6 text-modern-black" />
       {itemCount > 0 && (
         <span 
-          className="absolute -top-2 -right-2 bg-modern-red text-white text-[10px] font-black rounded-full min-w-[22px] h-[22px] px-1.5 flex items-center justify-center shadow-xl border-2 border-white ring-1 ring-modern-red/20"
+          className="absolute -top-2 -right-2 bg-white text-modern-red text-[10px] font-black rounded-full min-w-[22px] h-[22px] px-1.5 flex items-center justify-center shadow-xl border-2 border-modern-red ring-2 ring-modern-red/30"
         >
           {itemCount}
         </span>
@@ -38,9 +37,7 @@ function TrackOrderButton() {
       aria-label="Track your order"
       title="Track Order"
     >
-      <svg className="w-6 h-6 text-modern-black group-hover:text-modern-red transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-      </svg>
+      <Truck className="w-6 h-6 text-modern-black group-hover:text-modern-red transition-colors" />
     </button>
   );
 }
@@ -108,9 +105,7 @@ function Header() {
                 to="/store"
                 className="btn-primary flex items-center space-x-3 group"
               >
-                <svg className="w-5 h-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                </svg>
+                <Store className="w-5 h-5 group-hover:scale-110 transition-transform" />
                 <span>Store</span>
               </Link>
             </div>
@@ -182,9 +177,7 @@ function Header() {
                   onClick={() => setIsMenuOpen(false)}
                   className="btn-primary flex items-center space-x-3 mx-4 mt-2"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                  </svg>
+                  <Store className="w-5 h-5" />
                   <span>Visit Our Store</span>
                 </Link>
 
@@ -194,9 +187,7 @@ function Header() {
                   onClick={() => setIsMenuOpen(false)}
                   className="flex items-center space-x-3 mx-4 mt-2 px-4 py-3 border border-gray-200 rounded-xl text-modern-black font-semibold hover:bg-gray-50 transition-colors"
                 >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                  </svg>
+                  <Truck className="w-5 h-5" />
                   <span>Track Order</span>
                 </Link>
               </div>

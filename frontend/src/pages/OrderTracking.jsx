@@ -1,27 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useLocation } from 'react-router-dom';
 import { API_URL } from '../config';
 
 export default function OrderTracking() {
+  const location = useLocation();
   const [orderId, setOrderId] = useState('');
   const [email, setEmail] = useState('');
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const trackOrder = async (e) => {
-    e.preventDefault();
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const orderIdParam = params.get('orderId');
+    const emailParam = params.get('email');
+
+    if (orderIdParam && emailParam) {
+      setOrderId(orderIdParam);
+      setEmail(emailParam);
+      performTracking(orderIdParam, emailParam);
+    }
+  }, [location.search]);
+
+  const performTracking = async (id, mail) => {
     setError('');
     setOrder(null);
-
-    if (!orderId.trim() || !email.trim()) {
-      setError('Please enter both Order ID and email address.');
-      return;
-    }
-
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/orders/lookup?orderId=${encodeURIComponent(orderId)}&email=${encodeURIComponent(email)}`);
+      const response = await fetch(`${API_URL}/orders/lookup?orderId=${encodeURIComponent(id)}&email=${encodeURIComponent(mail)}`);
       const data = await response.json();
 
       if (!response.ok) {
@@ -36,15 +43,24 @@ export default function OrderTracking() {
     }
   };
 
+  const trackOrder = (e) => {
+    e.preventDefault();
+    if (!orderId.trim() || !email.trim()) {
+      setError('Please enter both Order ID and email address.');
+      return;
+    }
+    performTracking(orderId, email);
+  };
+
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case 'paid':
         return 'bg-blue-100 text-blue-800';
       case 'processing':
         return 'bg-yellow-100 text-yellow-800';
-      case 'shipped':
+      case 'delivering':
         return 'bg-purple-100 text-purple-800';
-      case 'delivered':
+      case 'completed':
         return 'bg-green-100 text-green-800';
       case 'cancelled':
         return 'bg-red-100 text-red-800';
@@ -59,9 +75,9 @@ export default function OrderTracking() {
         return 1;
       case 'processing':
         return 2;
-      case 'shipped':
+      case 'delivering':
         return 3;
-      case 'delivered':
+      case 'completed':
         return 4;
       default:
         return 0;
@@ -179,7 +195,7 @@ export default function OrderTracking() {
               <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
                 <div>
                   <h2 className="text-2xl font-bold text-modern-black">Order {order.id}</h2>
-                  <p className="text-modern-gray">Placed on {order.date}</p>
+                  <p className="text-modern-gray">Placed on {new Date(order.created_at).toLocaleDateString()}</p>
                 </div>
                 <span className={`mt-2 md:mt-0 px-4 py-2 rounded-full text-sm font-semibold ${getStatusColor(order.status)}`}>
                   {order.status}
@@ -196,7 +212,7 @@ export default function OrderTracking() {
                     style={{ width: `${((getStatusStep(order.status) - 1) / 3) * 100}%` }}
                   ></div>
                   
-                  {['Order Placed', 'Processing', 'Shipped', 'Delivered'].map((step, index) => (
+                  {['Order Placed', 'Processing', 'Delivering', 'Completed'].map((step, index) => (
                     <div key={step} className="flex flex-col items-center">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                         getStatusStep(order.status) > index 

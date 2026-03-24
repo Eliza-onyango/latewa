@@ -10,7 +10,7 @@ import { API_URL } from "../config";
 const contactInfo = [
   { icon: Mail, label: "Email", value: "info@latewacbo.org", href: "mailto:info@latewacbo.org" },
   { icon: Phone, label: "Phone", value: "+254 700 000 000", href: "tel:+254700000000" },
-  { icon: MapPin, label: "Location", value: "Nairobi, Kenya", href: "#" },
+  { icon: MapPin, label: "Location", value: "7th-8th Floors, Purple Tower, Shimo La Tewa Rd (Off Mombasa Rd), Nairobi", href: null },
   { icon: Clock, label: "Hours", value: "Mon-Fri: 9AM - 5PM EAT", href: "#" },
 ];
 
@@ -174,22 +174,25 @@ const Contact = () => {
 
               {/* Contact Info Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-12">
-                {contactInfo.map((item) => (
-                  <motion.a
-                    key={item.label}
-                    href={item.href}
-                    whileHover={{ scale: 1.02, y: -2 }}
-                    className="flex items-start p-6 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-red-100 transition-all"
-                  >
-                    <div className="bg-red-50 p-3 rounded-xl mr-4 group-hover:bg-red-500 group-hover:text-white transition-colors">
-                      <item.icon className="h-6 w-6 text-red-500 group-hover:text-white" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-red-500 uppercase tracking-wider mb-1">{item.label}</p>
-                      <p className="font-semibold text-gray-900 break-all">{item.value}</p>
-                    </div>
-                  </motion.a>
-                ))}
+                {contactInfo.map((item) => {
+                  const CardWrapper = item.href ? motion.a : motion.div;
+                  return (
+                    <CardWrapper
+                      key={item.label}
+                      {...(item.href ? { href: item.href } : {})}
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      className="flex items-start p-6 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-red-100 transition-all"
+                    >
+                      <div className="bg-red-50 p-3 rounded-xl mr-4 group-hover:bg-red-500 group-hover:text-white transition-colors">
+                        <item.icon className="h-6 w-6 text-red-500 group-hover:text-white" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-red-500 uppercase tracking-wider mb-1">{item.label}</p>
+                        <p className="font-semibold text-gray-900 break-all">{item.value}</p>
+                      </div>
+                    </CardWrapper>
+                  );
+                })}
               </div>
 
               {/* Social Connect */}
@@ -229,19 +232,17 @@ const Contact = () => {
             viewport={{ once: true }}
             className="h-[450px] bg-white rounded-3xl shadow-2xl overflow-hidden border-8 border-white relative"
           >
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-50">
-              <div className="bg-red-50 p-6 rounded-full mb-6 animate-pulse">
-                <MapPin className="h-12 w-12 text-red-500" />
-              </div>
-              <p className="text-xl font-bold text-gray-900 mb-2">Map Integration Coming Soon</p>
-              <p className="text-gray-500 max-w-xs text-center">We're currently setting up our interactive map to help you find us easier.</p>
-              <div className="mt-8 flex gap-4">
-                <div className="flex items-center text-sm text-gray-600">
-                  <MapPin className="h-4 w-4 mr-1 text-red-500" />
-                  Nairobi, Kenya
-                </div>
-              </div>
-            </div>
+            <iframe 
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3988.790518525000!2d36.8322!3d-1.2985!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x182f111000000000%3A0x1111111111111111!2sPurple%20Tower!5e0!3m2!1sen!2ske!4v1710750000000!5m2!1sen!2ske&q=Purple+Tower+Shimo+La+Tewa+Road+Nairobi" 
+              width="100%" 
+              height="100%" 
+              style={{ border: 0 }} 
+              allowFullScreen="" 
+              loading="eager" 
+              referrerPolicy="no-referrer-when-downgrade"
+              title="Office Location"
+              className="w-full h-full"
+            ></iframe>
           </motion.div>
         </div>
       </section>

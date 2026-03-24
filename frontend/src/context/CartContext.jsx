@@ -3,7 +3,7 @@ import { API_URL } from '../config';
 
 /*
 CartContext provides global cart state and actions.
-- items: [{ id, name, price, image, description, qty }]
+- items: [{ id, name, price, image, description, qty, discount_percentage, original_price, discounted_price }]
 - addItem(product, qty = 1)
 - removeItem(id)
 - increase(id)
@@ -36,19 +36,44 @@ export function CartProvider({ children }) {
   }, [items]);
 
   const itemCount = useMemo(() => items.reduce((acc, it) => acc + it.qty, 0), [items]);
-  const subtotal = useMemo(() => items.reduce((acc, it) => acc + it.price * it.qty, 0), [items]);
+  
+  // Calculate subtotal using discounted prices
+  const subtotal = useMemo(() => {
+    return items.reduce((acc, item) => {
+      // Use the discounted price if available, otherwise use the regular price
+      const itemPrice = item.discounted_price || item.price;
+      return acc + itemPrice * item.qty;
+    }, 0);
+  }, [items]);
+  
   const shipping = useMemo(() => (items.length > 0 ? 300 : 0), [items]); // KES 300 flat for demo
   const total = useMemo(() => subtotal + shipping, [subtotal, shipping]);
 
   const addItem = (product, qty = 1) => {
     setItems((prev) => {
       const idx = prev.findIndex((p) => p.id === product.id);
+      
+      // Calculate discounted price
+      const discountPercentage = product.discount_percentage || 0;
+      const originalPrice = product.original_price || product.price;
+      const discountedPrice = discountPercentage > 0 
+        ? Math.round(product.price * (1 - discountPercentage / 100))
+        : product.price;
+
+      const itemWithDiscount = {
+        ...product,
+        qty,
+        discount_percentage: discountPercentage,
+        original_price: originalPrice,
+        discounted_price: discountedPrice,
+      };
+
       if (idx !== -1) {
         const copy = [...prev];
         copy[idx] = { ...copy[idx], qty: copy[idx].qty + qty };
         return copy;
       }
-      return [...prev, { ...product, qty }];
+      return [...prev, itemWithDiscount];
     });
   };
 
@@ -105,3 +130,4 @@ export function useCart() {
   if (!ctx) throw new Error('useCart must be used within CartProvider');
   return ctx;
 }
+

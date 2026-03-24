@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { API_URL } from '../config';
+import { API_URL, getImageUrl } from '../config';
 
 // Helper function to get auth header
 const getAuthHeader = () => {
@@ -331,6 +331,21 @@ function RecentContactsList() {
 function ProductsManagement() {
   const [products, setProducts] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [editUploading, setEditUploading] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    description: '',
+    price: '',
+    image: '',
+    category: '',
+    in_stock: true,
+    stock_quantity: 0,
+    discount_percentage: 0,
+    original_price: 0,
+  });
   const [newProduct, setNewProduct] = useState({
     name: '',
     description: '',
@@ -338,21 +353,90 @@ function ProductsManagement() {
     image: '',
     category: 'Jewelry',
   });
+  const [imagePreview, setImagePreview] = useState('');
+  const [editImagePreview, setEditImagePreview] = useState('');
 
   useEffect(() => {
     authFetch(`${API_URL}/products`)
       .then((res) => res.json())
-      .then(setProducts)
+      .then((data) => setProducts(data.products || data))
       .catch(console.error);
   }, []);
 
+  // Handle image file selection for add form
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+      
+      // Store file for upload
+      setNewProduct({ ...newProduct, imageFile: file });
+    }
+  };
+
+  // Handle image file selection for edit form
+  const handleEditImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+      
+      // Store file for upload
+      setEditForm({ ...editForm, imageFile: file });
+    }
+  };
+
+  // Upload image to server
+  const uploadImage = async (file) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    
+    try {
+      const response = await fetch(`${API_URL}/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to upload image');
+      }
+      
+      const data = await response.json();
+      return data.path;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert('Failed to upload image. Please try again.');
+      throw error;
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
     try {
+      let imagePath = newProduct.image;
+      
+      // Upload image if a file was selected
+      if (newProduct.imageFile) {
+        setUploading(true);
+        imagePath = await uploadImage(newProduct.imageFile);
+        setUploading(false);
+      }
+      
       const res = await authFetch(`${API_URL}/products`, {
         method: 'POST',
         body: JSON.stringify({
           ...newProduct,
+          image: imagePath,
           price: Number(newProduct.price),
         }),
       });
@@ -360,8 +444,64 @@ function ProductsManagement() {
       setProducts([...products, product]);
       setShowForm(false);
       setNewProduct({ name: '', description: '', price: '', image: '', category: 'Jewelry' });
+      setImagePreview('');
     } catch (error) {
       console.error('Error adding product:', error);
+      alert('Failed to add product. Please try again.');
+    }
+  };
+
+  const handleEditClick = (product) => {
+    setEditingProduct(product);
+    setEditForm({
+      name: product.name || '',
+      description: product.description || '',
+      price: product.price || '',
+      image: product.image || '',
+      category: product.category || 'Jewelry',
+      in_stock: product.in_stock !== false,
+      stock_quantity: product.stock_quantity || 0,
+      discount_percentage: product.discount_percentage || 0,
+      original_price: product.original_price || product.price,
+    });
+    setEditImagePreview(product.image || '');
+    setShowEditModal(true);
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      let imagePath = editForm.image;
+      
+      // Upload image if a file was selected
+      if (editForm.imageFile) {
+        setEditUploading(true);
+        imagePath = await uploadImage(editForm.imageFile);
+        setEditUploading(false);
+      }
+      
+      const res = await authFetch(`${API_URL}/products/${editingProduct.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          name: editForm.name,
+          description: editForm.description,
+          price: Number(editForm.price),
+          image: imagePath,
+          category: editForm.category,
+          in_stock: editForm.in_stock,
+          stock_quantity: Number(editForm.stock_quantity),
+          discount_percentage: Number(editForm.discount_percentage),
+          original_price: Number(editForm.original_price),
+        }),
+      });
+      const updated = await res.json();
+      setProducts(products.map((p) => (p.id === editingProduct.id ? updated : p)));
+      setShowEditModal(false);
+      setEditingProduct(null);
+      setEditImagePreview('');
+    } catch (error) {
+      console.error('Error updating product:', error);
+      alert('Failed to update product. Please try again.');
     }
   };
 
@@ -437,14 +577,24 @@ function ProductsManagement() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Product Image
+                </label>
                 <input
-                  type="text"
-                  value={newProduct.image}
-                  onChange={(e) => setNewProduct({ ...newProduct, image: e.target.value })}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
                   className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  placeholder="/images/product.jpg"
                 />
+                {imagePreview && (
+                  <div className="mt-3">
+                    <img 
+                      src={imagePreview} 
+                      alt="Preview" 
+                      className="w-32 h-32 object-cover rounded-lg border border-gray-200"
+                    />
+                  </div>
+                )}
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
@@ -459,13 +609,18 @@ function ProductsManagement() {
               <div className="md:col-span-2 flex gap-3">
                 <button
                   type="submit"
-                  className="bg-red-600 text-white px-6 py-2 rounded-xl font-semibold hover:bg-red-700 transition-colors"
+                  disabled={uploading}
+                  className="bg-red-600 text-white px-6 py-2 rounded-xl font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Add Product
+                  {uploading ? 'Uploading...' : 'Add Product'}
                 </button>
                 <button
                   type="button"
-                  onClick={() => setShowForm(false)}
+                  onClick={() => {
+                    setShowForm(false);
+                    setImagePreview('');
+                    setNewProduct({ name: '', description: '', price: '', image: '', category: 'Jewelry' });
+                  }}
                   className="bg-gray-200 text-gray-700 px-6 py-2 rounded-xl font-semibold hover:bg-gray-300 transition-colors"
                 >
                   Cancel
@@ -476,14 +631,198 @@ function ProductsManagement() {
         )}
       </AnimatePresence>
 
+      {/* Edit Stock & Discount Modal */}
+      <AnimatePresence>
+        {showEditModal && editingProduct && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            onClick={() => setShowEditModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl p-6 shadow-xl border border-gray-100 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+            >
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Edit Product</h3>
+              
+              <form onSubmit={handleEditSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Product Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
+                    <input
+                      type="text"
+                      value={editForm.name}
+                      onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
+
+                  {/* Price */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Current Price (KES)</label>
+                    <input
+                      type="number"
+                      value={editForm.price}
+                      onChange={(e) => setEditForm({ ...editForm, price: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
+
+                  {/* Category */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                    <select
+                      value={editForm.category}
+                      onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    >
+                      <option value="Jewelry">Jewelry</option>
+                      <option value="Wall Art">Wall Art</option>
+                      <option value="Sculpture">Sculpture</option>
+                      <option value="Accessories">Accessories</option>
+                      <option value="Home Decor">Home Decor</option>
+                      <option value="Fashion">Fashion</option>
+                    </select>
+                  </div>
+
+                  {/* Image Upload */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Product Image</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleEditImageChange}
+                      className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    />
+                    {editImagePreview && (
+                      <div className="mt-3">
+                        <img 
+                          src={editImagePreview} 
+                          alt="Preview" 
+                          className="w-32 h-32 object-cover rounded-lg border border-gray-200"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Description */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea
+                      value={editForm.description}
+                      onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      rows="3"
+                      required
+                    />
+                  </div>
+
+                  {/* Stock Status */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Stock Status</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={editForm.in_stock}
+                        onChange={(e) => setEditForm({ ...editForm, in_stock: e.target.checked })}
+                        className="rounded border-gray-300"
+                      />
+                      <span className="text-sm text-gray-600">
+                        {editForm.in_stock ? '✓ In Stock' : '✗ Out of Stock'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Stock Quantity */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Stock Quantity</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={editForm.stock_quantity}
+                      onChange={(e) => setEditForm({ ...editForm, stock_quantity: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* Original Price */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Original Price (KES)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={editForm.original_price}
+                      onChange={(e) => setEditForm({ ...editForm, original_price: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* Discount Percentage */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Discount Percentage (%)</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={editForm.discount_percentage}
+                        onChange={(e) => setEditForm({ ...editForm, discount_percentage: e.target.value })}
+                        className="flex-1 px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      />
+                      {editForm.discount_percentage > 0 && (
+                        <div className="bg-green-50 px-3 py-2 rounded-xl flex items-center">
+                          <span className="text-sm font-semibold text-green-600">
+                            Save {editForm.discount_percentage}%
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="submit"
+                    disabled={editUploading}
+                    className="flex-1 bg-red-600 text-white px-4 py-2 rounded-xl font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {editUploading ? 'Saving...' : 'Save Changes'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEditModal(false);
+                      setEditImagePreview('');
+                    }}
+                    className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-xl font-semibold hover:bg-gray-300 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-        <table className="w-full">
+        <table className="w-full text-sm">
           <thead className="bg-gray-50">
             <tr>
-              <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">Product</th>
-              <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">Category</th>
-              <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">Price</th>
-              <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">Actions</th>
+              <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600">Product</th>
+              <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600">Price</th>
+              <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600">Stock</th>
+              <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600">Discount</th>
+              <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -492,31 +831,52 @@ function ProductsManagement() {
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
                     <img
-                      src={product.image || '/images/placeholder.jpg'}
+                      src={getImageUrl(product.image)}
                       alt={product.name}
-                      className="h-12 w-12 rounded-lg object-cover"
+                      className="h-10 w-10 rounded-lg object-cover"
                     />
                     <div>
-                      <p className="font-semibold text-gray-900">{product.name}</p>
-                      <p className="text-sm text-gray-500 truncate max-w-xs">{product.description}</p>
+                      <p className="font-semibold text-gray-900 text-sm">{product.name}</p>
+                      <p className="text-xs text-gray-500">{product.category}</p>
                     </div>
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <span className="px-3 py-1 bg-gray-100 rounded-full text-sm font-medium text-gray-600">
-                    {product.category}
-                  </span>
-                </td>
-                <td className="px-6 py-4 font-semibold text-gray-900">
-                  KES {product.price.toLocaleString()}
+                  <p className="font-semibold text-gray-900">KES {product.price.toLocaleString()}</p>
                 </td>
                 <td className="px-6 py-4">
-                  <button
-                    onClick={() => handleDelete(product.id)}
-                    className="text-red-600 hover:text-red-800 font-medium"
-                  >
-                    Delete
-                  </button>
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 w-fit ${
+                    product.in_stock 
+                      ? 'bg-green-100 text-green-700' 
+                      : 'bg-red-100 text-red-700'
+                  }`}>
+                    {product.in_stock ? '✓ In Stock' : '✗ Out of Stock'}
+                  </span>
+                </td>
+                <td className="px-6 py-4">
+                  {product.discount_percentage > 0 ? (
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700">
+                      Save {product.discount_percentage}%
+                    </span>
+                  ) : (
+                    <span className="text-xs text-gray-500">No discount</span>
+                  )}
+                </td>
+                <td className="px-6 py-4">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleEditClick(product)}
+                      className="text-blue-600 hover:text-blue-800 font-medium text-sm"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(product.id)}
+                      className="text-red-600 hover:text-red-800 font-medium text-sm"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -1018,7 +1378,7 @@ function GalleryManagement() {
           >
             <div className="relative h-48">
               <img
-                src={image.url}
+                src={getImageUrl(image.url)}
                 alt={image.caption}
                 className="w-full h-full object-cover"
               />

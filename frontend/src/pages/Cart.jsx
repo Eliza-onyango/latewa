@@ -1,9 +1,50 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 
 export default function Cart() {
-  const { items, increase, decrease, removeItem, subtotal, shipping, total } = useCart();
+  const { items, increase, decrease, removeItem } = useCart();
+  const [selectedItems, setSelectedItems] = useState(new Set());
+
+  // Calculate totals based only on selected items
+  const selectedItemsArray = items.filter(item => selectedItems.has(item.id));
+  const selectedCount = selectedItemsArray.length;
+  const selectedSubtotal = useMemo(() => 
+    selectedItemsArray.reduce((acc, item) => {
+      // Use discounted price if available, otherwise use regular price
+      const itemPrice = item.discounted_price || item.price;
+      return acc + itemPrice * item.qty;
+    }, 0), 
+    [selectedItemsArray]
+  );
+  const selectedShipping = useMemo(() => 
+    selectedCount > 0 ? 300 : 0, 
+    [selectedCount]
+  );
+  const selectedTotal = useMemo(() => 
+    selectedSubtotal + selectedShipping, 
+    [selectedSubtotal, selectedShipping]
+  );
+
+  // Toggle item selection
+  const toggleSelection = (itemId) => {
+    const newSelected = new Set(selectedItems);
+    if (newSelected.has(itemId)) {
+      newSelected.delete(itemId);
+    } else {
+      newSelected.add(itemId);
+    }
+    setSelectedItems(newSelected);
+  };
+
+  // Select all items
+  const selectAll = () => {
+    if (selectedItems.size === items.length) {
+      setSelectedItems(new Set());
+    } else {
+      setSelectedItems(new Set(items.map(item => item.id)));
+    }
+  };
 
   return (
     <section className="py-12 bg-gray-50">
@@ -38,9 +79,39 @@ export default function Cart() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Cart Items */}
               <div className="lg:col-span-2">
+                {/* Select All Section */}
+                <div className="bg-gray-50 rounded-lg p-4 mb-4 flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="select-all"
+                    checked={selectedItems.size === items.length && items.length > 0}
+                    onChange={selectAll}
+                    className="w-5 h-5 text-modern-red rounded cursor-pointer"
+                  />
+                  <label htmlFor="select-all" className="cursor-pointer font-semibold text-gray-800">
+                    Select All ({selectedItems.size}/{items.length})
+                  </label>
+                </div>
+
                 <div className="space-y-4">
                   {items.map((item) => (
-                    <div key={item.id} className="flex gap-4 border rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div 
+                      key={item.id} 
+                      className={`flex gap-4 border rounded-lg p-4 transition-all ${
+                        selectedItems.has(item.id) 
+                          ? 'border-modern-red bg-red-50 shadow-md' 
+                          : 'hover:shadow-md'
+                      }`}
+                    >
+                      {/* Checkbox */}
+                      <input
+                        type="checkbox"
+                        checked={selectedItems.has(item.id)}
+                        onChange={() => toggleSelection(item.id)}
+                        className="w-5 h-5 text-modern-red rounded cursor-pointer flex-shrink-0 mt-1"
+                      />
+
+                      {/* Product Image and Details */}
                       <img 
                         src={item.image} 
                         alt={item.name} 
@@ -50,7 +121,15 @@ export default function Cart() {
                         <div className="flex justify-between items-start">
                           <div>
                             <h3 className="text-lg font-semibold text-modern-black mb-1">{item.name}</h3>
-                            <p className="text-modern-red font-bold">KES {item.price.toLocaleString()}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-modern-red font-bold">KES {(item.discounted_price || item.price).toLocaleString()}</p>
+                              {item.discount_percentage > 0 && (
+                                <>
+                                  <span className="text-sm text-gray-500 line-through">KES {item.price.toLocaleString()}</span>
+                                  <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded">Save {item.discount_percentage}%</span>
+                                </>
+                              )}
+                            </div>
                           </div>
                           <button 
                             onClick={() => removeItem(item.id)} 
@@ -85,7 +164,7 @@ export default function Cart() {
                             </button>
                           </div>
                           <div className="text-sm text-gray-600">
-                            Subtotal: <span className="font-semibold">KES {(item.price * item.qty).toLocaleString()}</span>
+                            Subtotal: <span className="font-semibold">KES {((item.discounted_price || item.price) * item.qty).toLocaleString()}</span>
                           </div>
                         </div>
                       </div>
@@ -99,39 +178,50 @@ export default function Cart() {
                 <div className="bg-gray-50 rounded-xl p-6 sticky top-24">
                   <h2 className="text-xl font-bold text-modern-black mb-4">Order Summary</h2>
                   
-                  <div className="space-y-3 mb-4">
-                    <div className="flex justify-between text-sm text-gray-700">
-                      <span>Subtotal ({items.length} item{items.length !== 1 ? 's' : ''})</span>
-                      <span>KES {subtotal.toLocaleString()}</span>
+                  {selectedCount === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-gray-600 text-sm mb-4">
+                        Select items to calculate total
+                      </p>
+                      <div className="text-3xl mb-2">👇</div>
                     </div>
-                    <div className="flex justify-between text-sm text-gray-700">
-                      <span>Shipping</span>
-                      <span>KES {shipping.toLocaleString()}</span>
-                    </div>
-                    <div className="border-t pt-3 flex justify-between font-bold text-modern-black text-lg">
-                      <span>Total</span>
-                      <span>KES {total.toLocaleString()}</span>
-                    </div>
-                  </div>
+                  ) : (
+                    <>
+                      <div className="space-y-3 mb-4">
+                        <div className="flex justify-between text-sm text-gray-700">
+                          <span>Selected ({selectedCount} item{selectedCount !== 1 ? 's' : ''})</span>
+                          <span>KES {selectedSubtotal.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between text-sm text-gray-700">
+                          <span>Shipping</span>
+                          <span>KES {selectedShipping.toLocaleString()}</span>
+                        </div>
+                        <div className="border-t pt-3 flex justify-between font-bold text-modern-black text-lg">
+                          <span>Total</span>
+                          <span>KES {selectedTotal.toLocaleString()}</span>
+                        </div>
+                      </div>
 
-                  <div className="space-y-3">
-                    <Link 
-                      to="/checkout" 
-                      className="btn-primary w-full py-3 text-center block font-semibold"
-                    >
-                      Proceed to Checkout
-                    </Link>
-                    <Link 
-                      to="/store" 
-                      className="w-full py-3 text-center block border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-semibold"
-                    >
-                      Continue Shopping
-                    </Link>
-                  </div>
+                      <div className="space-y-3">
+                        <Link 
+                          to="/checkout" 
+                          className="btn-primary w-full py-3 text-center block font-semibold"
+                        >
+                          Proceed to Checkout
+                        </Link>
+                        <Link 
+                          to="/store" 
+                          className="w-full py-3 text-center block border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-semibold"
+                        >
+                          Continue Shopping
+                        </Link>
+                      </div>
 
-                  <div className="mt-4 text-xs text-gray-500 text-center">
-                    <p>Shipping calculated at checkout</p>
-                  </div>
+                      <div className="mt-4 text-xs text-gray-500 text-center">
+                        <p>Shipping calculated at checkout</p>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
