@@ -1,16 +1,9 @@
 import Hero from '../components/Hero';
 import PartnerLogo from '../components/PartnerLogo';
+import { partners } from '../data/partners';
 import partnersBg from '../assets/latewa2.jpg';
 
 function Partners() {
-  const partners = [
-    { name: 'UNDP Kenya' },
-    { name: 'Ministry of Environment' },
-    { name: 'Kenya Legal Aid Trust' },
-    { name: 'University of Nairobi' },
-    { name: 'Amref Health Africa' },
-    { name: 'Kenya Association of Professional Counsellors' },
-  ];
   return (
     <div>
       <Hero title="Our Partners" subtitle="Organizations we collaborate with." showButtons={false} backgroundImage={partnersBg} />

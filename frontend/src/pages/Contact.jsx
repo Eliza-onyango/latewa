@@ -5,20 +5,20 @@ import { Textarea } from "../components/ui/textarea";
 import { Mail, Phone, MapPin, Clock, Send, Facebook, Twitter, Instagram, Linkedin } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { API_URL } from "../config";
+import { API_URL, SITE } from "../config";
 
 const contactInfo = [
-  { icon: Mail, label: "Email", value: "info@latewacbo.org", href: "mailto:info@latewacbo.org" },
-  { icon: Phone, label: "Phone", value: "+254 700 000 000", href: "tel:+254700000000" },
-  { icon: MapPin, label: "Location", value: "7th-8th Floors, Purple Tower, Shimo La Tewa Rd (Off Mombasa Rd), Nairobi", href: null },
-  { icon: Clock, label: "Hours", value: "Mon-Fri: 9AM - 5PM EAT", href: "#" },
+  { icon: Mail, label: "Email", value: SITE.email, href: `mailto:${SITE.email}` },
+  { icon: Phone, label: "Phone", value: SITE.phone, href: `tel:${SITE.phoneTel}` },
+  { icon: MapPin, label: "Location", value: SITE.address, href: null },
+  { icon: Clock, label: "Hours", value: SITE.hours, href: "#" },
 ];
 
 const socialLinks = [
-  { icon: Facebook, href: "#", label: "Facebook" },
-  { icon: Twitter, href: "#", label: "Twitter" },
-  { icon: Instagram, href: "#", label: "Instagram" },
-  { icon: Linkedin, href: "#", label: "LinkedIn" },
+  { icon: Facebook, href: SITE.social.facebook, label: "Facebook" },
+  { icon: Twitter, href: SITE.social.twitter, label: "Twitter" },
+  { icon: Instagram, href: SITE.social.instagram, label: "Instagram" },
+  { icon: Linkedin, href: SITE.social.linkedin, label: "LinkedIn" },
 ];
 
 const Contact = () => {
@@ -233,7 +233,7 @@ const Contact = () => {
             className="h-[450px] bg-white rounded-3xl shadow-2xl overflow-hidden border-8 border-white relative"
           >
             <iframe 
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3988.790518525000!2d36.8322!3d-1.2985!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x182f111000000000%3A0x1111111111111111!2sPurple%20Tower!5e0!3m2!1sen!2ske!4v1710750000000!5m2!1sen!2ske&q=Purple+Tower+Shimo+La+Tewa+Road+Nairobi" 
+              src={SITE.googleMapsEmbedUrl}
               width="100%" 
               height="100%" 
               style={{ border: 0 }} 

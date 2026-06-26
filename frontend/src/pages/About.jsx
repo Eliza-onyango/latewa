@@ -18,9 +18,9 @@ const staggerContainer = {
 function About() {
   const teamMembers = [
     {
-      name: 'Sarah Mwangi',
+      name: 'Benedict Oduor',
       role: 'Executive Director',
-      bio: 'With over 15 years of experience in community development and social justice advocacy, Sarah leads our organization with passion and vision.'
+      bio: 'Advocate of the High Court of Kenya and Co-Founder of Latewa Arts CBO, Benedict is passionate about community development, environmental justice, and access to justice. He leads initiatives that empower youth through legal advocacy, skills development, and sustainable community-driven solutions.'
     },
     {
       name: 'Dr. James Omondi',
